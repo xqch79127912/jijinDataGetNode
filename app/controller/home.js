@@ -292,10 +292,10 @@ class HomeController extends Controller {
       const startVal = obj.minUnitNet + diffVal * startPercent;
       const endVal = obj.minUnitNet + diffVal * endPercent;
       if (currUnitNet < startVal && currUnitNet > obj.minUnitNet) {
-        arr1.push(v);
+        arr1.push({..._.pick(v, ['code', 'currDate', 'currUnitNet']), startVal, endVal});
       }
       if (currUnitNet > endVal && currUnitNet < obj.maxUnitNet) {
-        arr2.push(_.pick(v, ['code', 'currDate', 'currUnitNet']));
+        arr2.push({..._.pick(v, ['code', 'currDate', 'currUnitNet']), startVal, endVal});
       }
     }
     if (obj1m) itemFn(v, obj1m, objBuy.buy1m, objSale.sale1m);
