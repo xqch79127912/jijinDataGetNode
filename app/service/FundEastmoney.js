@@ -1,6 +1,7 @@
 const Service = require('egg').Service;
 const cheerio = require('cheerio');
 const iconv = require('iconv-lite');
+const moment = require('moment');
 
 class FundEastmoney extends Service {
   /**
@@ -70,7 +71,8 @@ class FundEastmoney extends Service {
     const { host } = config.fundEastmoney;
     const params = `type=lsjz&code=${code}&sdate=${startDate}&edate=${endDate}&per=${per}`;
     const url = `${host}/F10DataApi.aspx?${params}`;
-    const res = await ctx.curl(url, {method: 'GET'});
+    console.log(url);
+    const res = await ctx.curl(url, {method: 'GET', timeout: 100000});
     const coding = 'gb2312';
     const body = iconv.decode(res.data, coding);
     const $ = cheerio.load(`<body>${body}</body>`);
@@ -131,7 +133,7 @@ class FundEastmoney extends Service {
   }
   getCookisStr() {
     const arr = [
-      'st_si=74949607860288',
+      `st_si=${moment().format('GG')}${moment().format('x')}`,
       'st_asi=delete',
       'ASP.NET_SessionId=gekyucnll0wte0wrks2rr23b7',
       '_adsame_fullscreen_18503=1',
@@ -144,12 +146,12 @@ class FundEastmoney extends Service {
       'EMFUND7=null',
       'EMFUND8=null',
       'EMFUND0=null',
-      'EMFUND9=02-07 16:37:21@#$%u521B%u91D1%u5408%u4FE1%u5DE5%u4E1A%u5468%u671F%u80A1%u7968A@%23%24005968',
+      `EMFUND9=${moment().format('MM-DD')} ${moment().format('HH-mm-ss')}@#$%u521B%u91D1%u5408%u4FE1%u5DE5%u4E1A%u5468%u671F%u80A1%u7968A@%23%24005968`,
       'st_pvi=90009717841707',
-      'st_sp=2021-02-07%2012%3A14%3A29',
+      `st_sp=${moment().format('YYYY-MM-DD')}%2012%3A14%3A29`,
       'st_inirUrl=https%3A%2F%2Fwww.baidu.com%2Flink',
       'st_sn=21',
-      'st_psi=2021020716562364-0-0372414431',
+      `st_psi=${moment().format('YYYYMMDDwwDDDDHHmm-d-X')}`,
     ];
     return arr.join(';');
   }
