@@ -11,6 +11,10 @@ class HomeController extends Controller {
       const res = await this.getBuySaleData();
       this.ctx.body = res;
       return;
+    } else if (action === 'order') {
+      const res = await this.getOrderData();
+      this.ctx.body = res;
+      return;
     }
     this.ctx.body = '-----';
     // const res = await this.ctx.service.fundEastmoney.getDailyData('160127', '2021-01-01', '2021-05-01');
@@ -57,7 +61,7 @@ class HomeController extends Controller {
    * @returns
    */
   async getBuySaleData() {
-    const file = path.resolve(__dirname, `../data/busa_${moment().format('YYYYMMDD')}.json`);
+    const file = this.getBuySaleAutoFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
       const list = JSON.parse(str);
@@ -83,6 +87,70 @@ class HomeController extends Controller {
     return res;
   }
   /**
+   * 获取订单数据
+   *  包含生成订单动作
+   */
+  async getOrderData() {
+    const busaData = await this.getBuySaleData();
+    const { buyDate, saleDate } = busaData;
+    const defaultVal = { orders: [], closeOrders: [] };
+    let ordersData = {
+      obj1m: defaultVal,
+      obj3m: defaultVal,
+      obj6m: defaultVal,
+      obj1y: defaultVal,
+    };
+    const file = this.getOrderFilePath();
+    if (fs.existsSync(file)) {
+      const str = fs.readFileSync(file).toString();
+      ordersData = JSON.parse(str);
+    }
+    let { obj1m, obj3m, obj6m, obj1y } = ordersData;
+    const { buy1m, buy3m, buy6m, buy1y } = buyDate;
+    const { sale1m, sale3m, sale6m, sale1y } = saleDate;
+    const currDate = moment().format('YYYYMMDD');
+    function closeFn(obj1m, sale1m) {
+      const { orders } = obj1m;
+      let objOrders = {};
+      orders.forEach((v) => {
+        objOrders[v.code] = v;
+      });
+      if (sale1m.length) {
+        sale1m.forEach((obj) => {
+          if (objOrders[obj.code]) {
+            obj1m.closeOrders.push({...objOrders[obj.code], salePrice: obj.currUnitNet, closeTime: currDate });
+            delete(objOrders[obj.code]);
+          }
+        });
+      }
+      obj1m.orders = Object.values(objOrders);
+    }
+    closeFn(obj1m, sale1m);
+    closeFn(obj3m, sale3m);
+    closeFn(obj6m, sale6m);
+    closeFn(obj1y, sale1y);
+    function createFn(obj1m, b1m) {
+      const { orders } = obj1m;
+      let objOrders = {};
+      orders.forEach((v) => {
+        objOrders[v.code] = v;
+      });
+      if (b1m.length) {
+        b1m.forEach((obj) => {
+          if (! objOrders[obj.code]) {
+            objOrders[obj.code] = { createTime: currDate, code: obj.code, buyPrice: obj.currUnitNet };
+          }
+        });
+      }
+      obj1m.orders = Object.values(objOrders);
+    }
+    createFn(obj1m, buy1m);
+    createFn(obj3m, buy3m);
+    createFn(obj6m, buy6m);
+    createFn(obj1y, buy1y);
+    this.saveOrdersData(JSON.stringify({ obj1m, obj3m, obj6m, obj1y }));
+  }
+  /**
    * 按条件过滤
    * 增长率：
    *  近3年>90%
@@ -90,7 +158,7 @@ class HomeController extends Controller {
    *  近1年>30%
    */
   async findData() {
-    const file = path.resolve(__dirname, `../data/list_${moment().format('YYYYMMDD')}.json`);
+    const file = this.getListFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
       const list = JSON.parse(str);
@@ -173,7 +241,7 @@ class HomeController extends Controller {
    *  近1年>30%
    */
   async getGraphData(codes) {
-    const file = path.resolve(__dirname, `../data/graph_${moment().format('YYYYMMDD')}.json`);
+    const file = this.getGraphFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
       const list = JSON.parse(str);
@@ -286,11 +354,12 @@ class HomeController extends Controller {
   }
   getBuySaleItem(v, objBuy, objSale, startPercent = 0.1, endPercent = 0.8) {
     const { obj1m, obj3m, obj6m, obj1y } = v;
+    const { floatFormat } = this;
     function itemFn(v, obj, arr1, arr2) {
       const { currUnitNet } = v;
       const diffVal = obj.maxUnitNet - obj.minUnitNet;
-      const startVal = obj.minUnitNet + diffVal * startPercent;
-      const endVal = obj.minUnitNet + diffVal * endPercent;
+      const startVal = floatFormat(obj.minUnitNet + diffVal * startPercent);
+      const endVal = floatFormat(obj.minUnitNet + diffVal * endPercent);
       if (currUnitNet < startVal && currUnitNet > obj.minUnitNet) {
         arr1.push({..._.pick(v, ['code', 'currDate', 'currUnitNet']), startVal, endVal});
       }
@@ -304,7 +373,7 @@ class HomeController extends Controller {
     if (obj1y) itemFn(v, obj1y, objBuy.buy1y, objSale.sale1y);
   }
   saveListData(str) {
-    const file = path.resolve(__dirname, `../data/list_${moment().format('YYYYMMDD')}.json`);
+    const file = this.getListFilePath();
     fs.writeFile(file, str, (e) => {
       if (e) {
         console.log(e);
@@ -312,7 +381,7 @@ class HomeController extends Controller {
     })
   }
   saveGraphData(str) {
-    const file = path.resolve(__dirname, `../data/graph_${moment().format('YYYYMMDD')}.json`);
+    const file = this.getGraphFilePath();
     fs.writeFile(file, str, (e) => {
       if (e) {
         console.log(e);
@@ -320,12 +389,35 @@ class HomeController extends Controller {
     })
   }
   saveBuySaleAutoData(str) {
-    const file = path.resolve(__dirname, `../data/busa_${moment().format('YYYYMMDD')}.json`);
+    const file = this.getBuySaleAutoFilePath();
     fs.writeFile(file, str, (e) => {
       if (e) {
         console.log(e);
       }
     })
+  }
+  saveOrdersData(str) {
+    const file = this.getOrderFilePath();
+    fs.writeFile(file, str, (e) => {
+      if (e) {
+        console.log(e);
+      }
+    })
+  }
+  getBuySaleAutoFilePath() {
+    return path.resolve(__dirname, `../data/busa_${moment().format('YYYYMMww')}.json`);
+  }
+  getGraphFilePath() {
+    return path.resolve(__dirname, `../data/graph_${moment().format('YYYYMMDD')}.json`);
+  }
+  getListFilePath() {
+    return path.resolve(__dirname, `../data/list_${moment().format('YYYYMMww')}.json`);
+  }
+  getOrderFilePath() {
+    return path.resolve(__dirname, `../data/order_${moment().format('YYYY')}.json`);
+  }
+  floatFormat(number, fixed = 4) {
+    return parseFloat(number.toFixed(fixed));
   }
 }
 module.exports = HomeController;
