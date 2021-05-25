@@ -7,11 +7,11 @@ const _ = require('lodash');
 class HomeController extends Controller {
   async index() {
     const { action = '' } = this.ctx.request.query;
-    if (action === 'get') {
+    if (action === 'get') { // 生成买卖点参考数据
       const res = await this.getBuySaleData();
       this.ctx.body = res;
       return;
-    } else if (action === 'order') {
+    } else if (action === 'order') { // 生成订单
       const res = await this.getOrderData();
       this.ctx.body = res;
       return;
@@ -64,8 +64,7 @@ class HomeController extends Controller {
     const file = this.getBuySaleAutoFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
-      const list = JSON.parse(str);
-      return {list, count: list.length};
+      return JSON.parse(str);
     }
     const listRes = await this.findData();
     const graphArr = await this.getGraphData(listRes.list.map((v) => v[0]));
@@ -95,10 +94,10 @@ class HomeController extends Controller {
     const { buyDate, saleDate } = busaData;
     const defaultVal = { orders: [], closeOrders: [] };
     let ordersData = {
-      obj1m: defaultVal,
-      obj3m: defaultVal,
-      obj6m: defaultVal,
-      obj1y: defaultVal,
+      obj1m: Object.assign({}, defaultVal),
+      obj3m: Object.assign({}, defaultVal),
+      obj6m: Object.assign({}, defaultVal),
+      obj1y: Object.assign({}, defaultVal),
     };
     const file = this.getOrderFilePath();
     if (fs.existsSync(file)) {
@@ -109,28 +108,28 @@ class HomeController extends Controller {
     const { buy1m, buy3m, buy6m, buy1y } = buyDate;
     const { sale1m, sale3m, sale6m, sale1y } = saleDate;
     const currDate = moment().format('YYYYMMDD');
-    function closeFn(obj1m, sale1m) {
-      const { orders } = obj1m;
+    function closeFn(objRes, saleObj) {
+      const { orders } = objRes;
       let objOrders = {};
       orders.forEach((v) => {
         objOrders[v.code] = v;
       });
-      if (sale1m.length) {
-        sale1m.forEach((obj) => {
+      if (saleObj.length) {
+        saleObj.forEach((obj) => {
           if (objOrders[obj.code]) {
-            obj1m.closeOrders.push({...objOrders[obj.code], salePrice: obj.currUnitNet, closeTime: currDate });
+            objRes.closeOrders.push({...objOrders[obj.code], salePrice: obj.currUnitNet, closeTime: currDate });
             delete(objOrders[obj.code]);
           }
         });
       }
-      obj1m.orders = Object.values(objOrders);
+      objRes.orders = Object.values(objOrders);
     }
     closeFn(obj1m, sale1m);
     closeFn(obj3m, sale3m);
     closeFn(obj6m, sale6m);
     closeFn(obj1y, sale1y);
-    function createFn(obj1m, b1m) {
-      const { orders } = obj1m;
+    function createFn(objRes, b1m) {
+      const { orders } = objRes;
       let objOrders = {};
       orders.forEach((v) => {
         objOrders[v.code] = v;
@@ -142,7 +141,7 @@ class HomeController extends Controller {
           }
         });
       }
-      obj1m.orders = Object.values(objOrders);
+      objRes.orders = Object.values(objOrders);
     }
     createFn(obj1m, buy1m);
     createFn(obj3m, buy3m);
@@ -404,15 +403,19 @@ class HomeController extends Controller {
       }
     })
   }
+  // 可买卖数据
   getBuySaleAutoFilePath() {
     return path.resolve(__dirname, `../data/busa_${moment().format('YYYYMMww')}.json`);
   }
+  // 分组数据
   getGraphFilePath() {
     return path.resolve(__dirname, `../data/graph_${moment().format('YYYYMMDD')}.json`);
   }
+  // 列表数据
   getListFilePath() {
     return path.resolve(__dirname, `../data/list_${moment().format('YYYYMMww')}.json`);
   }
+  // 订单数据
   getOrderFilePath() {
     return path.resolve(__dirname, `../data/order_${moment().format('YYYY')}.json`);
   }
