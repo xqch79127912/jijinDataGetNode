@@ -16,10 +16,19 @@ class HomeController extends Controller {
       this.ctx.body = res;
       return;
     }
-    this.ctx.body = '-----';
-    // const res = await this.ctx.service.fundEastmoney.getDailyData('160127', '2021-01-01', '2021-05-01');
-    // const res = await this.getRangeMinMax('160127', '2020-05-01');
-    const res = await this.findData();
+    const res = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>title</title>
+</head>
+<body>
+    <h2>欢迎来到egg</h2>
+</body>
+    `;
     this.ctx.body = res;
   }
   async getAll() {
