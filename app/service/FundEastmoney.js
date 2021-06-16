@@ -66,10 +66,10 @@ class FundEastmoney extends Service {
    * @param {string} endDate 截止日期
    * @param {number} per 数据个数
    */
-  async getDailyData(code, startDate, endDate, per = 999) {
+  async getDailyData(code, startDate, endDate, per = 999, page = 1, fundData = []) {
     const { ctx, config } = this;
     const { host } = config.fundEastmoney;
-    const params = `type=lsjz&code=${code}&sdate=${startDate}&edate=${endDate}&per=${per}`;
+    const params = `type=lsjz&code=${code}&sdate=${startDate}&edate=${endDate}&per=${per}&page=${page}`;
     const url = `${host}/F10DataApi.aspx?${params}`;
     console.log(url);
     const res = await ctx.curl(url, {method: 'GET', timeout: 100000});
@@ -78,7 +78,6 @@ class FundEastmoney extends Service {
     const $ = cheerio.load(`<body>${body}</body>`);
     const table = $('body').find('table');
     const tbody = table.find('tbody');
-    const fundData = [];
     try{
       tbody.find('tr').each((i,trItem)=>{
         let fundItem = {};
@@ -94,6 +93,12 @@ class FundEastmoney extends Service {
     } catch (e) {
       console.log(e);
       throw new Error(e);
+    }
+    let apidata = {};
+    eval(res.data.toString().replace('var ', ''));
+    if (apidata.pages > apidata.curpage) {
+      page ++;
+      return await this.getDailyData(code, startDate, endDate, per, page, fundData);
     }
     return fundData;
   }

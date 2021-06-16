@@ -343,6 +343,7 @@ class HomeController extends Controller {
     return {code, obj1m, obj3m, obj6m, obj1y, currUnitNet, currAccumulatedNet, currDate};
   }
   validateMinMax(obj, unitNet, accumulatedNet, date) {
+    console.log(obj);
     if (obj.minUnitNet === 0 || obj.minUnitNet > unitNet) {
       obj.minUnitNet = unitNet;
       obj.minUnitNetDate = date;
