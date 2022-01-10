@@ -1,1 +1,1 @@
-{"obj1m":{"orders":[],"closeOrders":[]},"obj3m":{"orders":[],"closeOrders":[]},"obj6m":{"orders":[],"closeOrders":[]},"obj1y":{"orders":[],"closeOrders":[]}}
+{"obj1m":{"orders":[],"closeOrders":[]},"obj3m":{"orders":[],"closeOrders":[]},"obj6m":{"orders":[{"createTime":"20220110","code":"167001","buyPrice":1.9823},{"createTime":"20220110","code":"000209","buyPrice":4.6381},{"createTime":"20220110","code":"001298","buyPrice":3.776}],"closeOrders":[]},"obj1y":{"orders":[],"closeOrders":[]}}
