@@ -1,6 +1,12 @@
 # jijinDataGetNode
 node-egg爬虫实践
 
+`
+运行流程：
+npm run dev
+浏览器访问：http://127.0.0.1:7001/?action=order
+`
+
 ## 订单数据
 order_{YYYY}.js
 ## 分组（1月，3月，6月，1年）数据
