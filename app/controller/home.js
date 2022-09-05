@@ -73,7 +73,7 @@ class HomeController extends Controller {
     const file = this.getBuySaleAutoFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
-      return JSON.parse(str);
+      return str ? JSON.parse(str) : [];
     }
     const listRes = await this.findData();
     const graphArr = await this.getGraphData(listRes.list.map((v) => v[0]));
@@ -169,7 +169,7 @@ class HomeController extends Controller {
     const file = this.getListFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
-      const list = JSON.parse(str);
+      const list = str ? JSON.parse(str) : [];
       return {list, count: list.length};
     }
     const header = [
@@ -179,10 +179,14 @@ class HomeController extends Controller {
     ];
     const {sc = '3nzf', st = 'desc', sd = '2021-04-01', ed = '2021-04-30', pn = 30, dx = 1, pi = 1} = this.ctx.query;
     const ftArr = ['gp', 'hh', 'zq', 'zs', 'qdii', 'lof', 'fof'];
-    const promisArr = ftArr.map((ft) => {
-      return this.ctx.service.fundEastmoney.getList(ft, sc, st, sd, ed, pn, dx, pi);
-    });
-    const res = await Promise.all(promisArr);
+    // const promisArr = ftArr.map((ft) => {
+    //   return this.ctx.service.fundEastmoney.getList(ft, sc, st, sd, ed, pn, dx, pi);
+    // });
+    // const res = await Promise.all(promisArr);
+    const res = [];
+    for (const ft of ftArr) {
+      res.push(await this.ctx.service.fundEastmoney.getList(ft, sc, st, sd, ed, pn, dx, pi));
+    }
     const l3yInfo = {
       index: header.indexOf('近3年'),
       min: 100,
@@ -252,7 +256,7 @@ class HomeController extends Controller {
     const file = this.getGraphFilePath();
     if (fs.existsSync(file)) {
       const str = fs.readFileSync(file).toString();
-      const list = JSON.parse(str);
+      const list = str ? JSON.parse(str) : [];
       return list;
     }
     const lastYearDate = moment().subtract(1, 'years').format('YYYY-MM-DD');
